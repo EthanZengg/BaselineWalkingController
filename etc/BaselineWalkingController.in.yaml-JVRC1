@@ -29,7 +29,6 @@ collisions:
 # Initial set of contacts
 contacts: []
 
-
 # Implement some additional text states
 states:
   BWC::Initial_:
@@ -46,8 +45,6 @@ states:
   BWC::Main_:
     base: Parallel
     states: [BWC::GuiWalk_, BWC::Teleop_]
-
-
 
 # Transitions map
 transitions:
@@ -264,44 +261,35 @@ OverwriteConfigList:
       enableZmpFeedback: false
       useActualComForWrenchDist: false
 
-
-
-
-
 robots:
   # Environment models
   ground:
     module: env/ground
 
-  # Robot-specific configurations  机器人特定的配置文件
-  walker:
+  # Robot-specific configurations
+  jvrc1:
+    PostureTask:
+      jointWeights:
+        WAIST_R: 10
+        WAIST_P: 10
+      # For arm swing
+      jointGains:
+        - jointName: R_SHOULDER_P
+          stiffness: 400
+        - jointName: L_SHOULDER_P
+          stiffness: 400
 
-  #姿势任务相关关节的设定
-    #PostureTask:
-    #  jointWeights:
-    #    WAIST_R: 10
-    #    WAIST_P: 10
-
-  # For arm swing 用于手臂的摆动
-    #  jointGains:
-    #    - jointName: R_SHOULDER_P
-    #      stiffness: 400
-    #    - jointName: L_SHOULDER_P
-    #      stiffness: 400
-
-    # 质心任务相关关节的设定
     CoMTask:
       activeJoints: [
       "Root",
-      "left_leg_j1", "left_leg_j2", "left_leg_j3", "left_leg_j4", "left_leg_j5", "left_leg_j6",
-      "right_leg_j1", "right_leg_j2", "right_leg_j3", "right_leg_j4", "right_leg_j5", "right_leg_j6"]
+      "R_HIP_Y", "R_HIP_R", "R_HIP_P", "R_KNEE", "R_ANKLE_P", "R_ANKLE_R",
+      "L_HIP_Y", "L_HIP_R", "L_HIP_P", "L_KNEE", "L_ANKLE_P", "L_ANKLE_R"]
 
-    #基座朝向相关的设定
     BaseOrientationTask:
-      frame: base_link
+      frame: WAIST_R_S
 
     FootManager:
-      enableArmSwing: false
+      enableArmSwing: true
       jointAnglesForArmSwing:
         Left:
           R_SHOULDER_P: [-0.13962634015954636] # -8

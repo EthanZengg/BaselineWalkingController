@@ -121,6 +121,7 @@ $ wstool update -t src isri-aist/BaselineWalkingController
 $ wstool merge -t src src/isri-aist/BaselineWalkingController/depends.rosinstall
 $ wstool update -t src
 ```
+注意：查看cmake文件夹是否下载成功，若没有下载成功，将无法识别CmakeList中add_project_dependency等命令
 
 2. Install dependent packages.
 ```bash
