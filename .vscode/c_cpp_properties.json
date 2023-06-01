@@ -1,0 +1,26 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/opt/ros/melodic/include/**",
+        "/home/zxa/ros/ws_bwc/src/isri-aist/BaselineWalkingController/include/**",
+        "/home/zxa/ros/ws_bwc/src/isri-aist/CentroidalControlCollection/include/**",
+        "/home/zxa/ros/ws_bwc/src/isri-aist/ForceControlCollection/include/**",
+        "/home/zxa/ros/ws_bwc/src/isri-aist/NMPC/nmpc_ddp/include/**",
+        "/home/zxa/ros/ws_bwc/src/isri-aist/QpSolverCollection/include/**",
+        "/home/zxa/ros/ws_bwc/src/isri-aist/TrajectoryCollection/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

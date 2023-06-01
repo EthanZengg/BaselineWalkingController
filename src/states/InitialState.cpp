@@ -16,7 +16,7 @@ void InitialState::start(mc_control::fsm::Controller & _ctl)
 
   phase_ = 0;
 
-  // Setup GUI
+  // 设置一个“Start”按钮，按下后，phase_变为1，并进入run函数
   ctl().gui()->addElement({ctl().name()}, mc_rtc::gui::Button("Start", [this]() { phase_ = 1; }));
 
   output("OK");
@@ -24,6 +24,7 @@ void InitialState::start(mc_control::fsm::Controller & _ctl)
 
 bool InitialState::run(mc_control::fsm::Controller &)
 {
+  //若phase_为0，即按下Start按钮
   if(phase_ == 0)
   {
     // Auto start
@@ -33,25 +34,30 @@ bool InitialState::run(mc_control::fsm::Controller &)
       phase_ = 1;
     }
   }
+
+  //若phase_为1
   if(phase_ == 1)
   {
     phase_ = 2;
 
-    // Clean up GUI
+    // 清除"Start"按钮
     ctl().gui()->removeElement({ctl().name()}, "Start");
 
-    // Reset and add tasks
-    ctl().comTask_->reset();
-    ctl().solver().addTask(ctl().comTask_);
+    // 重置和添加任务（Reset and add tasks）
+    ctl().comTask_->reset();  
+    ctl().solver().addTask(ctl().comTask_);   //1. 添加质心任务
+
     ctl().baseOriTask_->reset();
-    ctl().solver().addTask(ctl().baseOriTask_);
+    ctl().solver().addTask(ctl().baseOriTask_);  //2.添加基座方向任务
+
     for(const auto & foot : Feet::Both)
     {
       ctl().footTasks_.at(foot)->reset();
-      ctl().solver().addTask(ctl().footTasks_.at(foot));
+      ctl().solver().addTask(ctl().footTasks_.at(foot));    //3.添加左右脚任务
     }
 
-    // Setup task stiffness interpolation
+
+    // 设置任务刚度（Setup task stiffness interpolation）
     comTaskStiffness_ = ctl().comTask_->dimStiffness();
     baseOriTaskStiffness_ = ctl().baseOriTask_->dimStiffness();
     footTasksStiffness_ = ctl().footManager_->config().footTaskGain.stiffness;
@@ -59,18 +65,26 @@ bool InitialState::run(mc_control::fsm::Controller &)
     stiffnessRatioFunc_ = std::make_shared<TrajColl::CubicInterpolator<double>>(
         std::map<double, double>{{ctl().t(), 0.0}, {ctl().t() + stiffnessInterpDuration, 1.0}});
 
+
+
     // Reset managers
     ctl().footManager_->reset();
     ctl().centroidalManager_->reset();
     ctl().enableManagerUpdate_ = true;
 
+
+
     // Setup anchor frame
     ctl().centroidalManager_->setAnchorFrame();
+
+
 
     // Add GUI of managers
     ctl().footManager_->addToGUI(*ctl().gui());
     ctl().centroidalManager_->addToGUI(*ctl().gui());
   }
+
+  //如果phase为2
   else if(phase_ == 2)
   {
     phase_ = 3;
@@ -81,6 +95,9 @@ bool InitialState::run(mc_control::fsm::Controller &)
     ctl().footManager_->addToLogger(ctl().logger());
     ctl().centroidalManager_->addToLogger(ctl().logger());
   }
+
+
+
 
   // Interpolate task stiffness
   if(stiffnessRatioFunc_)

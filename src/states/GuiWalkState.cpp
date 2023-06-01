@@ -10,7 +10,7 @@ void GuiWalkState::start(mc_control::fsm::Controller & _ctl)
 {
   State::start(_ctl);
 
-  // Setup GUI
+  // 添加步行控制面板，点击walker即可行走
   ctl().gui()->addElement({ctl().name(), "GuiWalk"},
                           mc_rtc::gui::Form(
                               "Walk",
@@ -35,7 +35,7 @@ bool GuiWalkState::run(mc_control::fsm::Controller &)
 
 void GuiWalkState::teardown(mc_control::fsm::Controller &)
 {
-  // Clean up GUI
+  // 清理界面
   ctl().gui()->removeCategory({ctl().name(), "GuiWalk"});
 }
 

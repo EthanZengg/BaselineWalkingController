@@ -72,9 +72,18 @@ public:
 
   //! Base link orientation task
   std::shared_ptr<mc_tasks::OrientationTask> baseOriTask_;
+// 1.创建了名为baseOriTask_的智能指针变量
+// 2.指针所指向对象的类型为mc_tasks 命名空间中的 OrientationTask ，是用于控制base link方向的任务
+// 3.OrientationTask用于控制坐标系的方向
+
 
   //! Foot tasks
   std::unordered_map<Foot, std::shared_ptr<mc_tasks::force::FirstOrderImpedanceTask>> footTasks_;
+// 1.无序映射容器，通过键可以快速寻找对应的值
+// 2.对应关系： Foot ->std::shared_ptr<mc_tasks::force::FirstOrderImpedanceTask>
+// 3.键表示机器人的脚步，值是一个共享指针，表示对应脚的力控任务
+// 4.footTasks_是映射，使用方法：ctl().footTasks_.at(foot)，输出foot相应的力控任务
+
 
   //! Foot manager
   std::shared_ptr<FootManager> footManager_;
