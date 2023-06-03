@@ -4,6 +4,8 @@
 
 using namespace BWC;
 
+
+//字符串转枚举
 Foot BWC::strToFoot(const std::string & footStr)
 {
   if(footStr == "Left")
@@ -20,6 +22,7 @@ Foot BWC::strToFoot(const std::string & footStr)
   }
 }
 
+//返回对脚
 Foot BWC::opposite(const Foot & foot)
 {
   if(foot == Foot::Left)
@@ -32,6 +35,7 @@ Foot BWC::opposite(const Foot & foot)
   }
 }
 
+//左脚返回正，右脚返回负
 int BWC::sign(const Foot & foot)
 {
   if(foot == Foot::Left)
@@ -44,6 +48,7 @@ int BWC::sign(const Foot & foot)
   }
 }
 
+//函数重载，用于Foot枚举值转化为字符串
 std::string std::to_string(const Foot & foot)
 {
   if(foot == Foot::Left)
@@ -60,6 +65,8 @@ std::string std::to_string(const Foot & foot)
   }
 }
 
+
+//函数重载，用于SupportPhase枚举值转化为字符串
 std::string std::to_string(const SupportPhase & phase)
 {
   if(phase == SupportPhase::DoubleSupport)

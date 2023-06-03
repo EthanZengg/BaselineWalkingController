@@ -6,58 +6,56 @@
 
 namespace BWC
 {
-/** \brief Foot. */
+
+//定义枚举类型Foot
 enum class Foot
 {
-  //! Left foot
+  //左脚枚举常量为0。右脚枚举常量为1
   Left = 0,
-
-  //! Right foot
   Right
 };
 
 namespace Feet
 {
-//! Both feet
+//定义了存储类型为Foot的常量合集Both，该合集存储了两个枚举值
 const std::set<Foot> Both = {Foot::Left, Foot::Right};
-} // namespace Feet
+} 
 
-/** \brief Convert string to foot. */
+//声明函数：strToFoot。该函数用于将字符串转化为脚部的枚举值
 Foot strToFoot(const std::string & footStr);
 
-/** \brief Get the opposite foot. */
+//声明函数：opposite。该函数用于获取给定脚相对的脚
 Foot opposite(const Foot & foot);
 
-/** \brief Get the sign of foot.
 
-    Positive for left foot, negative for right foot.
-*/
+// 获取脚部的符号。对于左脚返回正数，对于右脚返回负数。
 int sign(const Foot & foot);
 
-/** \brief Support phase. */
+
+//定义了一个枚举类型 ：支撑阶段，其包含三个枚举值，分别是双脚支撑，左脚支撑，右脚支撑
 enum class SupportPhase
 {
-  //! Both feet support phase
+  //双脚支撑的枚举值为0
   DoubleSupport = 0,
 
-  //! Left foot support phase
+  //左脚支撑的枚举值为1
   LeftSupport,
 
-  //! Right foot support phase
+  //右脚支撑的枚举值为2
   RightSupport
 };
 
-/** \brief Footstep. */
+//定义结构体Footstep，表示脚步信息的结构体
 struct Footstep
 {
-  /** \brief Constructor.
-      \param _foot foot
-      \param _pose foot pose
-      \param _transitStartTime time to start ZMP transition
-      \param _swingStartTime time to start swinging the foot
-      \param _swingEndTime time to end swinging the foot
-      \param _transitEndTime time to end ZMP transition
-      \param _swingTrajConfig configuration for swing trajectory
+  /** \brief 构造函数
+      \param _foot    脚部
+      \param _pose   脚步姿态
+      \param _transitStartTime  ZMP切换开始时间
+      \param _swingStartTime  脚步摆动开始时间
+      \param _swingEndTime   脚步摆动结束时
+      \param _transitEndTime   ZMP切换结束时间
+      \param _swingTrajConfig   脚步摆动轨迹的配置信息
 
       \note The following relation must hold: _transitStartTime < _swingStartTime < _swingEndTime < _transitEndTime.
   */
@@ -96,11 +94,13 @@ struct Footstep
 };
 } // namespace BWC
 
+
+
+//在 std 命名空间下重载了两个函数，分别用于将 Foot 枚举和 SupportPhase 枚举转换为字符串
 namespace std
 {
-/** \brief Convert foot to string. */
-std::string to_string(const BWC::Foot & foot);
 
-/** \brief Convert support phase to string. */
+std::string to_string(const BWC::Foot & foot);
 std::string to_string(const BWC::SupportPhase & phase);
+
 } // namespace std

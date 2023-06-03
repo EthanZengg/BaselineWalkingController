@@ -38,7 +38,7 @@ void TeleopState::start(mc_control::fsm::Controller & _ctl)
   // Use a dedicated queue so as not to call callbacks of other modules
   nh_->setCallbackQueue(&callbackQueue_);
  
-wistSub_ = nh_->subscribe<geometry_msgs::Twist>(twistTopicName, 1, &TeleopState::twistCallback, this);
+twistSub_ = nh_->subscribe<geometry_msgs::Twist>(twistTopicName, 1, &TeleopState::twistCallback, this);
 //1.创建了一个订阅者
 //2.订阅主题：twistTopicName
 //3.消息类型：geometry_msgs::Twist

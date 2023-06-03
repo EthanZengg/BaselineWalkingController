@@ -1,11 +1,4 @@
 ---
-###
-#
-#控制器编译后，会在/devel/.private/baseline_walking_controller/lib/mc_controller/etc中生成.so文件，mc_rtc会自动识别读取
-#
-###
-
-
 # If true, the FSM transitions are managed by an external tool
 Managed: false
 # If true and the FSM is self-managed, transitions should be triggered
@@ -23,45 +16,36 @@ StatesFiles:
   - "@STATES_INSTALL_PREFIX@/@PROJECT_NAME@/states/data"
 # If true, state factory will be more verbose
 VerboseStateFactory: false
-
-
-# 添加全局约束（General constraints, always on）
+# General constraints, always on
 constraints:
   - type: contact
   - type: kinematics
     damper: [0.1, 0.01, 0.5]
   - type: compoundJoint
-
-# 添加碰撞约束（Collision constraint）
+# Collision constraint
 collisions:
   - type: collision
     useMinimal: true
-    
 # Initial set of contacts
 contacts: []
 
-
-# 创建4个state及其配置文件
 # Implement some additional text states
 states:
-  BWC::Initial_:         
-    base: BWC::Initial   #base的作用：继承该state的配置文件
+  BWC::Initial_:
+    base: BWC::Initial
 
   BWC::GuiWalk_:
     base: BWC::GuiWalk
 
   BWC::Teleop_:
     base: BWC::Teleop
-    configs:                      #配置文件
+    configs:
       twistTopicName: /cmd_vel
 
   BWC::Main_:
     base: Parallel
     states: [BWC::GuiWalk_, BWC::Teleop_]
 
-
-
-#创建各个state的转换关系
 # Transitions map
 transitions:
   - [BWC::Initial_, OK, BWC::Main_, Auto]
@@ -215,34 +199,24 @@ CentroidalManager:
     regularWeight: 1e-8
     ridgeForceMinMax: [3, 1000] # [N]
 
-
-
-
-  # 选择生成轨迹 的方法
-
-  # 法一：预冠控制PreviewControlZmp
+  # PreviewControlZmp
   method: PreviewControlZmp
   horizonDuration: 2.0 # [sec]
   horizonDt: 0.005 # [sec]
 
-  #法二：Ddp法
   # # DdpZmp
   # method: DdpZmp
   # horizonDuration: 2.0 # [sec]
   # horizonDt: 0.02 # [sec]
   # ddpMaxIter: 3
 
-  #法三：规划脚法
   # # FootGuidedControl
   # method: FootGuidedControl
- 
-  #法四：mpc法
+
   # # IntrinsicallyStableMpc
   # method: IntrinsicallyStableMpc
   # horizonDuration: 2.0 # [sec]
   # horizonDt: 0.02 # [sec]
-
-
 
 
 # OverwriteConfigKeys: [NoSensors]
@@ -281,24 +255,61 @@ OverwriteConfigList:
             linear: [0, 0, 0]
             angular: [0, 0, 0]
 
-
-
-    #质心管理
     CentroidalManager:
       useActualStateForMpc: false
       enableZmpFeedback: false
       useActualComForWrenchDist: false
 
 
-
-
-
 robots:
   # Environment models
   ground:
-    module: env/ground    //添加地面
+    module: env/ground
 
-  # Robot-specific configurations  机器人特定的配置文件
+
+
+
+
+  # JVRC的配置文件
+  jvrc1:
+    PostureTask:
+      jointWeights:
+        WAIST_R: 10
+        WAIST_P: 10
+      # For arm swing
+      jointGains:
+        - jointName: R_SHOULDER_P
+          stiffness: 400
+        - jointName: L_SHOULDER_P
+          stiffness: 400
+
+    CoMTask:
+      activeJoints: [
+      "Root",
+      "R_HIP_Y", "R_HIP_R", "R_HIP_P", "R_KNEE", "R_ANKLE_P", "R_ANKLE_R",
+      "L_HIP_Y", "L_HIP_R", "L_HIP_P", "L_KNEE", "L_ANKLE_P", "L_ANKLE_R"]
+
+    BaseOrientationTask:
+      frame: PELVIS_S    
+     # frame: WAIST_R_S
+
+    FootManager:
+      enableArmSwing: true
+      jointAnglesForArmSwing:
+        Left:
+          R_SHOULDER_P: [-0.13962634015954636] # -8
+          L_SHOULDER_P: [0.06981317007977318] # 4
+        Right:
+          R_SHOULDER_P: [0.06981317007977318] # 4
+          L_SHOULDER_P: [-0.13962634015954636] # -8
+
+
+
+
+
+
+
+#walker相关的配置文件
   walker:
 
   #姿势任务相关关节的设定

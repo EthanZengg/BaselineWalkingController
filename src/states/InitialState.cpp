@@ -50,15 +50,18 @@ bool InitialState::run(mc_control::fsm::Controller &)
     ctl().baseOriTask_->reset();
     ctl().solver().addTask(ctl().baseOriTask_);  //2.添加基座方向任务
 
-    for(const auto & foot : Feet::Both)
+
+    //3.添加左右脚任务
+    for(const auto & foot : Feet::Both)    //定义循环变量foot，遍历枚举类型Feet::Both中的定义值
     {
       ctl().footTasks_.at(foot)->reset();
-      ctl().solver().addTask(ctl().footTasks_.at(foot));    //3.添加左右脚任务
+      ctl().solver().addTask(ctl().footTasks_.at(foot));    
     }
 
 
+
     // 设置任务刚度（Setup task stiffness interpolation）
-    comTaskStiffness_ = ctl().comTask_->dimStiffness();
+    comTaskStiffness_ = ctl().comTask_->dimStiffness();  
     baseOriTaskStiffness_ = ctl().baseOriTask_->dimStiffness();
     footTasksStiffness_ = ctl().footManager_->config().footTaskGain.stiffness;
     constexpr double stiffnessInterpDuration = 1.0; // [sec]
