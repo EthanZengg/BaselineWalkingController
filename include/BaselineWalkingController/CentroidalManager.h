@@ -20,89 +20,70 @@ namespace BWC
 {
 class BaselineWalkingController;
 
-/** \brief Centroidal manager.
+//定义类：Centroidal manager。其作用是根据指定的ZMP曲线和传感器测量值计算质心目标
 
-    Centroidal manager calculates the centroidal targets from the specified reference ZMP trajectory and sensor
-   measurements.
- */
 class CentroidalManager
 {
 public:
-  /** \brief Configuration. */
+
+  //配置结构体，用于配置参数
   struct Configuration
   {
-    //! Name
-    std::string name = "CentroidalManager";
+    
+    std::string name = "CentroidalManager"; //名称，表示质心管理器的名称
+    std::string method = "";//方法，表示质心管理器使用的方法。
 
-    //! Method
-    std::string method = "";
+  
+    bool useActualStateForMpc = false; //是否使用实际状态进行模型预测控制（MPC）。
 
-    //! Whether to use actual state for MPC
-    bool useActualStateForMpc = false;
+    bool enableZmpFeedback = true; //是否启动DCM反馈
 
-    //! Whether to enable DCM feedback
-    bool enableZmpFeedback = true;
+    bool enableComZFeedback = true; //是否启用质心Z轴位置反馈控制
 
-    //! Whether to enable CoM Z feedback
-    bool enableComZFeedback = true;
-
-    /** \brief Feedback gain of DCM
-
+    /** \brief  DCM反馈的增益值
         It must be greater than 1 to be stable.
     */
     double dcmGainP = 2.0;
 
-    //! Feedforward gain of ZMP velocity
-    double zmpVelGain = 0.1;
+    double zmpVelGain = 0.1; //ZMP前向速度增益
 
-    //! Feedback proportional gain of CoM Z
-    double comZGainP = 100.0;
+    double comZGainP = 100.0;   //质心Z轴位置的比例反馈增益
 
-    //! Feedback derivative gain of CoM Z
-    double comZGainD = 10.0;
+    double comZGainD = 10.0;    //质心Z轴位置的导数反馈增益
 
-    //! Reference CoM Z position [m]
-    double refComZ = 0.9;
+    double refComZ = 0.5;    //参考质心高度 [m]
 
-    //! Whether to use target surface pose for anchor frame of control robot
-    bool useTargetPoseForControlRobotAnchorFrame = true;
+    bool useTargetPoseForControlRobotAnchorFrame = true;     //否使用目标表面位姿作为控制机器人锚点框架的参考
 
-    //! Whether to use actual CoM for wrench distribution
-    bool useActualComForWrenchDist = true;
+    bool useActualComForWrenchDist = true;    //是否使用实际质心位置进行力矩分配
 
-    //! Configuration for wrench distribution
-    mc_rtc::Configuration wrenchDistConfig;
+    mc_rtc::Configuration wrenchDistConfig;    //! Configuration for wrench distribution
 
-    /** \brief Load mc_rtc configuration. */
-    virtual void load(const mc_rtc::Configuration & mcRtcConfig);
+    virtual void load(const mc_rtc::Configuration & mcRtcConfig);     // 加载mc_rtc配置
   };
 
+
+
 public:
-  /** \brief Constructor.
-      \param ctlPtr pointer to controller
-      \param mcRtcConfig mc_rtc configuration
+  /** \brief 构造函数
+      \param ctlPtr pointer to controller 控制器指针
+      \param mcRtcConfig mc_rtc configuration mc_rtc配置文件
    */
   CentroidalManager(BaselineWalkingController * ctlPtr, const mc_rtc::Configuration & mcRtcConfig = {});
 
-  /** \brief Reset.
 
-      This method should be called once when controller is reset.
-   */
+  // 声明质心管理管理器reset函数，在控制器重置时被调用
   virtual void reset();
 
-  /** \brief Update.
 
-      This method should be called once every control cycle.
-   */
+   // 声明质心管理管理器update函数，在每个控制周期被调用，用于执行质心管理器的更新逻辑。
   virtual void update();
 
-  /** \brief Stop.
-
-      This method should be called once when stopping the controller.
-  */
+ 
+   // 声明质心管理管理器update函数，在停止控制器时被调用
   virtual void stop();
 
-  /** \brief Const accessor to the configuration. */
+  //定义虚函数config()，返回类型为const Configuration &，在派生类中使用config()来对具体的Configuration配置信息的访问
   virtual const Configuration & config() const = 0;
 
   /** \brief Add entries to the GUI. */
@@ -117,86 +98,65 @@ public:
   /** \brief Remove entries from the logger. */
   virtual void removeFromLogger(mc_rtc::Logger & logger);
 
-  /** \brief Set anchor frame. */
-  void setAnchorFrame();
+  void setAnchorFrame(); //声明函数，用于设定锚点框架
 
 protected:
-  /** \brief Const accessor to the controller. */
-  inline const BaselineWalkingController & ctl() const
+  
+  inline const BaselineWalkingController & ctl() const  //返回控制器常量引用
   {
     return *ctlPtr_;
   }
 
-  /** \brief Accessor to the controller. */
-  inline BaselineWalkingController & ctl()
+  inline BaselineWalkingController & ctl() //返回控制器的引用
   {
     return *ctlPtr_;
   }
 
-  /** \brief Accessor to the configuration. */
-  virtual Configuration & config() = 0;
+  virtual Configuration & config() = 0;//返回控制器引用
 
-  /** \brief Run MPC to plan centroidal trajectory.
+  virtual void runMpc() = 0;//运行MPC来规划质心轨迹。它从mpcCom_和mpcComVel_计算plannedZmp_和plannedForceZ_。
 
-      This method calculates plannedZmp_ and plannedForceZ_ from mpcCom_ and mpcComVel_.
-   */
-  virtual void runMpc() = 0;
+  virtual bool isConstantComZ() const = 0; //是否假设质心Z坐标固定不变
 
-  /** \brief Whether to assume that CoM Z is constant. */
-  virtual bool isConstantComZ() const = 0;
-
-  /** \brief Calculate anchor frame.
-      \param robot robot
-   */
+  // 声明函数，用来计算锚点框架
+  // 传入参数：robot 机器人
   sva::PTransformd calcAnchorFrame(const mc_rbdyn::Robot & robot) const;
 
-  /** \brief Calculate ZMP from wrench list.
-      \param wrenchList wrench list
-      \param zmpPlaneHeight height of ZMP plane
-      \param zmpPlaneNormal normal of ZMP plane
-  */
+
+  // 声明函数，作用：根据提供的力矩列表、ZMP平面高度和ZMP平面法线计算ZMP，
+  //  传入参数：力距列表、ZMP平面高度、ZMP平面法线
   Eigen::Vector3d calcZmp(const std::unordered_map<Foot, sva::ForceVecd> & wrenchList,
                           double zmpPlaneHeight = 0,
                           const Eigen::Vector3d & zmpPlaneNormal = Eigen::Vector3d::UnitZ()) const;
 
-  /** \brief Calculate planned CoM acceleration.
 
-      This method is overridden to support extended CoM-ZMP models (e.g., manipulation forces) in inherited classes.
-  */
+
+ //声明函数，用于计算质心的加速度。将其在基类中声明为虚函数的目的是为了在派生类中进行重写，以支持扩展的质心-零力矩点（CoM-ZMP）模型，例如考虑操纵力等其他因素
   virtual Eigen::Vector3d calcPlannedComAccel() const;
 
 protected:
-  //! Pointer to controller
-  BaselineWalkingController * ctlPtr_ = nullptr;
+  
+  BaselineWalkingController * ctlPtr_ = nullptr; //指向BaselineWalkingController的指针
 
-  //! Robot mass [kg]
-  double robotMass_ = 0;
+  double robotMass_ = 0;//机器人的质量，以千克（kg）为单位
 
-  //! CoM used as the initial state of MPC
-  Eigen::Vector3d mpcCom_ = Eigen::Vector3d::Zero();
+  Eigen::Vector3d mpcCom_ = Eigen::Vector3d::Zero(); //MPC初始状态的质心位置
 
-  //! CoM velocity used as the initial state of MPC
-  Eigen::Vector3d mpcComVel_ = Eigen::Vector3d::Zero();
+  Eigen::Vector3d mpcComVel_ = Eigen::Vector3d::Zero();//MPC初始状态的质心速度
 
-  //! Reference ZMP
-  Eigen::Vector3d refZmp_ = Eigen::Vector3d::Zero();
+  Eigen::Vector3d refZmp_ = Eigen::Vector3d::Zero();//参考ZMP
 
-  //! ZMP planned by MPC
-  Eigen::Vector3d plannedZmp_ = Eigen::Vector3d::Zero();
+  Eigen::Vector3d plannedZmp_ = Eigen::Vector3d::Zero(); //有MPC计算出的ZMP曲线
 
-  //! Force Z planned by MPC
-  double plannedForceZ_ = 0;
+  double plannedForceZ_ = 0; //由MPC计算得出的力在Z轴方向上的分量
 
-  //! ZMP with feedback control
-  Eigen::Vector3d controlZmp_ = Eigen::Vector3d::Zero();
+  Eigen::Vector3d controlZmp_ = Eigen::Vector3d::Zero();//带有反馈控制的ZMP
 
-  //! Force Z with feedback control
-  double controlForceZ_ = 0;
+  double controlForceZ_ = 0;  //是带有反馈控制的力在Z轴方向上的分量。
 
   //! Wrench distribution
-  std::shared_ptr<ForceColl::WrenchDistribution> wrenchDist_;
+  std::shared_ptr<ForceColl::WrenchDistribution> wrenchDist_;//创建共享指针，指向WrenchDistribution，用于进行力矩分配
 
-  //! Contact list
-  std::unordered_map<Foot, std::shared_ptr<ForceColl::Contact>> contactList_;
+  std::unordered_map<Foot, std::shared_ptr<ForceColl::Contact>> contactList_;//个无序映射容器，用于存储与脚步相关的接触对象
 };
 } // namespace BWC

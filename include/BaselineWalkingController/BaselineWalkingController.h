@@ -17,10 +17,11 @@ struct FirstOrderImpedanceTask;
 
 namespace BWC
 {
-class FootManager;
-class CentroidalManager;
+class FootManager;  //声明FootManager类
+class CentroidalManager; //声明CentroidalMnager类
 
-/** \brief Humanoid walking controller with various baseline methods. */
+
+//BaselineWalkingController类的构造函数(继承自mc_control::fsm::Controller类)
 struct BaselineWalkingController : public mc_control::fsm::Controller
 {
 public:

@@ -46,7 +46,7 @@ states:
     base: Parallel
     states: [BWC::GuiWalk_, BWC::Teleop_]
 
-# Transitions map
+# state之间的转换关系
 transitions:
   - [BWC::Initial_, OK, BWC::Main_, Auto]
 # Initial state
@@ -65,30 +65,35 @@ ObserverPipelines:
 
 controllerName: BWC
 
+#设置姿势任务的配置文件
 PostureTask:
   stiffness: 10
 
+#设置质心任务的配置文件
 CoMTask:
   type: com
   stiffness: [1000.0, 1000.0, 1000.0]
   weight: 1000.0
 
+#设置OrientationTask的配置文件
 BaseOrientationTask:
   type: orientation
   stiffness: 300.0
   weight: 500.0
 
+#设置脚步任务的配置文件（在BaselineWalkingController.cpp中会读取所有任务配置）
 FootTaskList:
-  - type: firstOrderImpedance
-    foot: Left
-    frame: LeftFootCenter
-    cutoffPeriod: 0.01
-    weight: 1000.0
+  - type: firstOrderImpedance  #脚部任务的类型
+    foot: Left                                      #该任务应用与左脚
+    frame: LeftFootCenter           #设置任务的参考坐标系
+    cutoffPeriod: 0.01                    #截至频率
+    weight: 1000.0                           #任务权重
   - type: firstOrderImpedance
     foot: Right
     frame: RightFootCenter
     cutoffPeriod: 0.01
     weight: 1000.0
+
 
 FootManager:
   name: FootManager

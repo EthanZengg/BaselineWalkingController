@@ -66,7 +66,7 @@ std::string std::to_string(const Foot & foot)
 }
 
 
-//函数重载，用于SupportPhase枚举值转化为字符串
+//函数重载，用于枚举值转化为字符串
 std::string std::to_string(const SupportPhase & phase)
 {
   if(phase == SupportPhase::DoubleSupport)
