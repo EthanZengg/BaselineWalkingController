@@ -5,14 +5,17 @@
 
 using namespace BWC;
 
+//加载
 void SwingTrajIndHorizontalVertical::Configuration::load(const mc_rtc::Configuration & mcRtcConfig)
 {
   SwingTraj::Configuration::load(mcRtcConfig);
 
+  //加载IndHorizontalVertical相关的参数
   mcRtcConfig("withdrawDurationRatio", withdrawDurationRatio);
   mcRtcConfig("approachDurationRatio", approachDurationRatio);
   mcRtcConfig("verticalTopDurationRatio", verticalTopDurationRatio);
   mcRtcConfig("verticalTopOffset", verticalTopOffset);
+
   if(mcRtcConfig.has("tiltAngleWithdraw"))
   {
     tiltAngleWithdraw = mc_rtc::constants::toRad(mcRtcConfig("tiltAngleWithdraw"));
@@ -32,11 +35,14 @@ void SwingTrajIndHorizontalVertical::Configuration::load(const mc_rtc::Configura
   }
 }
 
+
+//加载默认配置
 void SwingTrajIndHorizontalVertical::loadDefaultConfig(const mc_rtc::Configuration & mcRtcConfig)
 {
   defaultConfig_.load(mcRtcConfig);
 }
 
+//添加GUI按钮
 void SwingTrajIndHorizontalVertical::addConfigToGUI(mc_rtc::gui::StateBuilder & gui,
                                                     const std::vector<std::string> & category)
 {
@@ -81,12 +87,14 @@ void SwingTrajIndHorizontalVertical::addConfigToGUI(mc_rtc::gui::StateBuilder & 
                      [](double v) { defaultConfig_.tiltForwardAngleThre = mc_rtc::constants::toRad(v); }));
 }
 
+//清除界面
 void SwingTrajIndHorizontalVertical::removeConfigFromGUI(mc_rtc::gui::StateBuilder & gui,
                                                          const std::vector<std::string> & category)
 {
   gui.removeCategory(category);
 }
 
+//构造函数
 SwingTrajIndHorizontalVertical::SwingTrajIndHorizontalVertical(const sva::PTransformd & startPose,
                                                                const sva::PTransformd & endPose,
                                                                double startTime,
@@ -100,33 +108,33 @@ SwingTrajIndHorizontalVertical::SwingTrajIndHorizontalVertical(const sva::PTrans
   double withdrawDuration = config_.withdrawDurationRatio * (endTime_ - startTime_);
   double approachDuration = config_.approachDurationRatio * (endTime_ - startTime_);
 
-  // Horizontal position
+  // 水平位置
   {
-    horizontalPosFunc_ = std::make_shared<TrajColl::CubicInterpolator<Eigen::Vector2d>>();
-    horizontalPosFunc_->appendPoint(std::make_pair(startTime_, startPose_.translation().head<2>()));
+    horizontalPosFunc_ = std::make_shared<TrajColl::CubicInterpolator<Eigen::Vector2d>>();  //创建指向CubicInterpolator智能指针
+    horizontalPosFunc_->appendPoint(std::make_pair(startTime_, startPose_.translation().head<2>()));//添加关键点，添加形式：（时间，水平位置）
     horizontalPosFunc_->appendPoint(std::make_pair(startTime_ + withdrawDuration, startPose_.translation().head<2>()));
     horizontalPosFunc_->appendPoint(std::make_pair(endTime_ - approachDuration, endPose_.translation().head<2>()));
     horizontalPosFunc_->appendPoint(std::make_pair(endTime_, endPose_.translation().head<2>()));
-    horizontalPosFunc_->calcCoeff();
+    horizontalPosFunc_->calcCoeff();//利用关键点计算插值系数，算法网址：https://academiccommons.columbia.edu/doi/10.7916/D82Z1DMQ 
   }
 
-  // Vertical position
+  // 垂直位置
   {
     double verticalTopTime =
-        (1.0 - config_.verticalTopDurationRatio) * startTime_ + config_.verticalTopDurationRatio * endTime_;
-    TrajColl::BoundaryConstraint<Vector1d> zeroVelBC(TrajColl::BoundaryConstraintType::Velocity, Vector1d::Zero());
+        (1.0 - config_.verticalTopDurationRatio) * startTime_ + config_.verticalTopDurationRatio * endTime_;//计算垂直顶点的时间
+    TrajColl::BoundaryConstraint<Vector1d> zeroVelBC(TrajColl::BoundaryConstraintType::Velocity, Vector1d::Zero()); //创建 zeroVelBC，用于定义垂直位置插值函数的边界约束，在这里，使用了类型为 "Velocity" 的边界约束，并将其值设为零，表示在起始和结束时刻的垂直位置速度为零
 
-    verticalPosFunc_ = std::make_shared<TrajColl::CubicSpline<Vector1d>>(1, zeroVelBC, zeroVelBC);
-    verticalPosFunc_->appendPoint(std::make_pair(startTime_, startPose_.translation().tail<1>()));
+    verticalPosFunc_ = std::make_shared<TrajColl::CubicSpline<Vector1d>>(1, zeroVelBC, zeroVelBC);//创建指向CubicSpline的智能指针，并传入边界约束
+    verticalPosFunc_->appendPoint(std::make_pair(startTime_, startPose_.translation().tail<1>()));//添加关键点，添加形式：（时间，垂直位置）
     verticalPosFunc_->appendPoint(std::make_pair(
         verticalTopTime, (sva::PTransformd(config_.verticalTopOffset) * sva::interpolate(startPose_, endPose_, 0.5))
                              .translation()
                              .tail<1>()));
     verticalPosFunc_->appendPoint(std::make_pair(endTime_, endPose_.translation().tail<1>()));
-    verticalPosFunc_->calcCoeff();
+    verticalPosFunc_->calcCoeff();//计算插值系数
   }
 
-  // Rotation
+  // 角度 
   {
     rotFunc_ = std::make_shared<TrajColl::CubicInterpolator<Eigen::Matrix3d, Eigen::Vector3d>>();
     rotFunc_->appendPoint(std::make_pair(startTime_, startPose_.rotation().transpose()));
@@ -168,7 +176,7 @@ SwingTrajIndHorizontalVertical::SwingTrajIndHorizontalVertical(const sva::PTrans
     }
   }
 
-  // Tilt angle
+  // 倾斜角度（Tilt angle）
   {
     double tiltAngleWithdrawDuration = config_.tiltAngleWithdrawDurationRatio * (endTime_ - startTime_);
     double tiltAngleApproachDuration = config_.tiltAngleApproachDurationRatio * (endTime_ - startTime_);
@@ -185,7 +193,7 @@ SwingTrajIndHorizontalVertical::SwingTrajIndHorizontalVertical(const sva::PTrans
     tiltAngleFunc_->calcCoeff();
   }
 
-  // Tilt center
+  // 倾斜中心（Tilt center）
   {
     double tiltCenterWithdrawDuration = config_.tiltCenterWithdrawDurationRatio * (endTime_ - startTime_);
     double tiltCenterApproachDuration = config_.tiltCenterApproachDurationRatio * (endTime_ - startTime_);

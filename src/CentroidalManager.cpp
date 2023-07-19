@@ -15,6 +15,8 @@
 
 using namespace BWC;
 
+
+//Configuration中load函数的实现
 void CentroidalManager::Configuration::load(const mc_rtc::Configuration & mcRtcConfig)
 {
   mcRtcConfig("name", name);
@@ -26,7 +28,7 @@ void CentroidalManager::Configuration::load(const mc_rtc::Configuration & mcRtcC
   mcRtcConfig("zmpVelGain", zmpVelGain);
   mcRtcConfig("comZGainP", comZGainP);
   mcRtcConfig("comZGainD", comZGainD);
-  mcRtcConfig("refComZ", refComZ);
+  mcRtcConfig("refComZ", refComZ);  //读取参考高度
   mcRtcConfig("useTargetPoseForControlRobotAnchorFrame", useTargetPoseForControlRobotAnchorFrame);
   mcRtcConfig("useActualComForWrenchDist", useActualComForWrenchDist);
   mcRtcConfig("wrenchDistConfig", wrenchDistConfig);
@@ -38,31 +40,38 @@ CentroidalManager::CentroidalManager(BaselineWalkingController * ctlPtr, const m
 {
 }
 
+
+//reset函数
 void CentroidalManager::reset()
 {
   robotMass_ = ctl().robot().mass();
 }
 
+
+
+
+//update函数
 void CentroidalManager::update()
 {
-  // Set MPC state
-  if(config().useActualStateForMpc)
+  // 设置MPC的状态
+  if(config().useActualStateForMpc)  //根据真机设置任务目标
   {
     mpcCom_ = ctl().realRobot().com();
     mpcComVel_ = ctl().realRobot().comVelocity();
   }
-  else
+  else//根据上一步计划状态设置任务目标
   {
-    // Task targets are the planned state in the previous step
     mpcCom_ = ctl().comTask_->com();
     mpcComVel_ = ctl().comTask_->refVel();
   }
+
+  //调用calcRefZmp计算参考zmp
   refZmp_ = ctl().footManager_->calcRefZmp(ctl().t());
 
-  // Run MPC
+  // 执行 runMPC函数，计算质心轨迹
   runMpc();
 
-  // Calculate target wrench
+  // 计算目标力距
   {
     controlZmp_ = plannedZmp_;
     controlForceZ_ = plannedForceZ_;
@@ -93,7 +102,9 @@ void CentroidalManager::update()
     }
 
     // Convert ZMP to wrench and distribute
-    contactList_ = ctl().footManager_->calcCurrentContactList();
+    contactList_ = ctl().footManager_->calcCurrentContactList();//调用函数计算当前的接触列表
+
+    //创建智能指针
     wrenchDist_ = std::make_shared<ForceColl::WrenchDistribution>(ForceColl::getContactVecFromMap(contactList_),
                                                                   config().wrenchDistConfig);
     Eigen::Vector3d comForWrenchDist =
@@ -106,19 +117,28 @@ void CentroidalManager::update()
     wrenchDist_->run(controlWrench, comForWrenchDist);
   }
 
-  // Set target of tasks
+
+
+
+  // ----------------------------------------------------------------------------------设置任务的目标----------------------------------------------------------------------------------
   {
-    // Set target of CoM task
+    
     Eigen::Vector3d plannedComAccel = calcPlannedComAccel();
+    //1.计算质心位置
     Eigen::Vector3d nextPlannedCom =
         mpcCom_ + ctl().dt() * mpcComVel_ + 0.5 * std::pow(ctl().dt(), 2) * plannedComAccel;
+      
+    //2.计算质心速度   
     Eigen::Vector3d nextPlannedComVel = mpcComVel_ + ctl().dt() * plannedComAccel;
+
     if(isConstantComZ())
     {
       nextPlannedCom.z() = config().refComZ + ctl().footManager_->calcRefGroundPosZ(ctl().t());
       nextPlannedComVel.z() = ctl().footManager_->calcRefGroundPosZ(ctl().t(), 1);
       plannedComAccel.z() = ctl().footManager_->calcRefGroundPosZ(ctl().t(), 2);
     }
+
+    //3.添加task目标
     ctl().comTask_->com(nextPlannedCom);
     ctl().comTask_->refVel(nextPlannedComVel);
     ctl().comTask_->refAccel(plannedComAccel);
@@ -135,6 +155,11 @@ void CentroidalManager::update()
       ctl().footTasks_.at(foot)->targetWrenchW(targetWrench);
     }
   }
+  // ----------------------------------------------------------------------------------设置任务的目标----------------------------------------------------------------------------------
+
+
+
+
 
   // Update force visualization
   {
@@ -142,6 +167,9 @@ void CentroidalManager::update()
     wrenchDist_->addToGUI(*ctl().gui(), {ctl().name(), config().name, "ForceMarker"});
   }
 }
+
+
+
 
 void CentroidalManager::stop()
 {

@@ -12,6 +12,7 @@
 #include <mc_tasks/FirstOrderImpedanceTask.h>
 #include <mc_tasks/OrientationTask.h>
 
+
 #include <ForceColl/Contact.h>
 
 #include <BaselineWalkingController/BaselineWalkingController.h>
@@ -24,16 +25,22 @@
 
 using namespace BWC;
 
+
+//load函数，用于读取控制器配置文件
 void FootManager::Configuration::load(const mc_rtc::Configuration & mcRtcConfig)
 {
-  mcRtcConfig("name", name);
-  mcRtcConfig("footstepDuration", footstepDuration);
-  mcRtcConfig("doubleSupportRatio", doubleSupportRatio);
+  mcRtcConfig("name", name);    //name==FootManager
+  mcRtcConfig("footstepDuration", footstepDuration); //读取步行时间
+  mcRtcConfig("doubleSupportRatio", doubleSupportRatio);//读取双足支撑比例
+  
+  //读取位置变化极限(x [m], y [m], theta [deg])
   if(mcRtcConfig.has("deltaTransLimit"))
   {
     deltaTransLimit = mcRtcConfig("deltaTransLimit");
-    deltaTransLimit[2] = mc_rtc::constants::toRad(deltaTransLimit[2]);
+    deltaTransLimit[2] = mc_rtc::constants::toRad(deltaTransLimit[2]);//将度数转化为弧度
   }
+
+  //修改步宽
   if(mcRtcConfig.has("midToFootTranss"))
   {
     for(const auto & foot : Feet::Both)
@@ -41,6 +48,8 @@ void FootManager::Configuration::load(const mc_rtc::Configuration & mcRtcConfig)
       mcRtcConfig("midToFootTranss")(std::to_string(foot), midToFootTranss.at(foot));
     }
   }
+
+//设置任务刚度
   if(mcRtcConfig.has("footTaskGain"))
   {
     footTaskGain = TaskGain(mcRtcConfig("footTaskGain"));
@@ -63,6 +72,8 @@ void FootManager::Configuration::load(const mc_rtc::Configuration & mcRtcConfig)
     mcRtcConfig("impedanceGains")("DoubleSupport", impGains.at("DoubleSupport"));
     mcRtcConfig("impedanceGains")("Swing", impGains.at("Swing"));
   }
+
+  //读取jointAnglesForArmSwing配置文件
   if(mcRtcConfig.has("jointAnglesForArmSwing"))
   {
     mcRtcConfig("jointAnglesForArmSwing")("Nominal", jointAnglesForArmSwing.at("Nominal"));
@@ -71,6 +82,10 @@ void FootManager::Configuration::load(const mc_rtc::Configuration & mcRtcConfig)
   }
 }
 
+
+
+
+//加载配置文件中的速度模式
 void FootManager::VelModeData::Configuration::load(const mc_rtc::Configuration & mcRtcConfig)
 {
   if(mcRtcConfig.has("footstepQueueSize"))
@@ -85,10 +100,14 @@ void FootManager::VelModeData::Configuration::load(const mc_rtc::Configuration &
   mcRtcConfig("enableOnlineFootstepUpdate", enableOnlineFootstepUpdate);
 }
 
+
+//VelModeData结构体中reset函数的实现
 void FootManager::VelModeData::reset(bool enabled)
 {
+
   enabled_ = enabled;
-  targetVel_.setZero();
+  targetVel_.setZero();//reset后将速度目标值设为0
+
 }
 
 FootManager::FootManager(BaselineWalkingController * ctlPtr, const mc_rtc::Configuration & mcRtcConfig)
@@ -100,10 +119,10 @@ FootManager::FootManager(BaselineWalkingController * ctlPtr, const mc_rtc::Confi
 
   if(mcRtcConfig.has("VelMode"))
   {
-    velModeData_.config_.load(mcRtcConfig("VelMode"));
+    velModeData_.config_.load(mcRtcConfig("VelMode"));//加载速度模式
   }
 
-  if(mcRtcConfig.has("SwingTraj"))
+  if(mcRtcConfig.has("SwingTraj"))//加载摆动轨迹的参数
   {
     SwingTrajCubicSplineSimple::loadDefaultConfig(
         mcRtcConfig("SwingTraj")("CubicSplineSimple", mc_rtc::Configuration{}));
@@ -114,21 +133,37 @@ FootManager::FootManager(BaselineWalkingController * ctlPtr, const mc_rtc::Confi
   }
 }
 
+
+
+//FootManager类reset函数的实现
 void FootManager::reset()
 {
-  velModeData_.reset(false);
+  std::cout<<"已进入FootManager的reset函数"<<std::endl;
+  velModeData_.reset(false);//调用velModeData_结构体的reset函数
+  footstepQueue_.clear();//调用footstepQueue_结构体的reset函数
+  prevFootstep_.reset();//调用prevFootstep_结构体的reset函数
+  std::cout<<"完成所有子类的reset函数"<<std::endl;
 
-  footstepQueue_.clear();
-  prevFootstep_.reset();
-
+  //遍历左右脚
   for(const auto & foot : Feet::Both)
   {
+    //利用foot作为键，依次获得脚的接触面名称，接触面的目标位姿，并存储到targetFootPoses_的容器中
     targetFootPoses_.emplace(foot, ctl().robot().surfacePose(surfaceName(foot)));
+
+    //数据插入到targetFootVels_容器，键为foot，值为初始值为0、MotionVecd类型的对象（作为脚部的目标速度）
     targetFootVels_.emplace(foot, sva::MotionVecd::Zero());
+
+    //数据插入到targetFootAccels_容器，键为foot，值为初始值为0、MotionVecd类型的对象（作为脚部的目标加度）
     targetFootAccels_.emplace(foot, sva::MotionVecd::Zero());
+
+     //数据插入到footTaskGains_容器，键为foot，值为任务增益
     footTaskGains_.emplace(foot, config_.footTaskGain);
+
+    //将数据插入到trajStartFootPoseFuncs_容器，键为foot，值为空指针
     trajStartFootPoseFuncs_.emplace(foot, nullptr);
   }
+
+
   trajStartFootPoses_ = targetFootPoses_;
 
   supportPhase_ = SupportPhase::DoubleSupport;
@@ -146,7 +181,7 @@ void FootManager::reset()
   groundPosZFunc_->appendPoint(std::make_pair(ctl().t() + config_.zmpHorizon, refGroundPosZ));
   groundPosZFunc_->calcCoeff();
 
-  contactFootPosesList_.emplace(ctl().t(), targetFootPoses_);
+  contactFootPosesList_.emplace(ctl().t(), targetFootPoses_);//向列表中添加新元素：t-目标脚的位姿
 
   swingFootstep_ = nullptr;
   swingTraj_.reset();
@@ -161,18 +196,27 @@ void FootManager::reset()
   {
     impGainTypes_.emplace(foot, "DoubleSupport");
   }
-
+  
   requireImpGainUpdate_ = true;
 
-  if(config_.jointAnglesForArmSwing.at("Nominal").empty() && config_.jointAnglesForArmSwing.at("Left").size() > 0)
+
+/*
+ //----------------------------------------------------------添加手臂挥动----------------------------------------------------------
+
+  if(config_.jointAnglesForArmSwing.at("Nominal").empty() && config_.jointAnglesForArmSwing.at("Left").size() > 0) //若存在Left的配置信息
   {
-    auto postureTask = ctl().getPostureTask(ctl().robot().name());
-    for(const auto & jointAngleKV : config_.jointAnglesForArmSwing.at("Left"))
+    auto postureTask = ctl().getPostureTask(ctl().robot().name());//读取姿势任务
+
+    for(const auto & jointAngleKV : config_.jointAnglesForArmSwing.at("Left"))//遍历 "Left" 的组内的关节角度集合，jointAngleKV.first获取关节名，jointAngleKV.second 获取关节角度值
     {
-      config_.jointAnglesForArmSwing.at("Nominal")[jointAngleKV.first] =
-          postureTask->posture()[ctl().robot().jointIndexByName(jointAngleKV.first)];
+      config_.jointAnglesForArmSwing.at("Nominal")[jointAngleKV.first] =                        //通过 jointAngleKV.first 作为（键）访问 "Nominal" 中对应的节角度值
+          postureTask->posture()[ctl().robot().jointIndexByName(jointAngleKV.first)];      //将关节角的值进行替换
     }
-  }
+  } 
+
+//----------------------------------------------------------添加手臂挥动----------------------------------------------------------
+ */
+
 }
 
 void FootManager::update()
@@ -191,6 +235,7 @@ void FootManager::stop()
   removeFromLogger(ctl().logger());
 }
 
+//添加按钮
 void FootManager::addToGUI(mc_rtc::gui::StateBuilder & gui)
 {
   gui.addElement({ctl().name(), config_.name, "Status"},
@@ -408,6 +453,8 @@ Footstep FootManager::makeFootstep(const Foot & foot,
                   startTime + config_.footstepDuration, swingTrajConfig);
 }
 
+
+//显示脚步
 bool FootManager::appendFootstep(const Footstep & newFootstep)
 {
   // Check time of new footstep
@@ -428,11 +475,14 @@ bool FootManager::appendFootstep(const Footstep & newFootstep)
     }
   }
 
-  // Push to the queue
+  //添加脚步 Push to the queue
   footstepQueue_.push_back(newFootstep);
 
   return true;
 }
+
+
+
 
 Eigen::Vector3d FootManager::clampDeltaTrans(const Eigen::Vector3d & deltaTrans, const Foot & foot)
 {
@@ -487,48 +537,64 @@ std::unordered_map<Foot, sva::PTransformd> FootManager::calcContactFootPoses(dou
   }
 }
 
+
+//----------------------------------------------------------获取支撑脚---------------------------------------------------------
 std::set<Foot> FootManager::getCurrentContactFeet() const
 {
-  if(supportPhase_ == SupportPhase::DoubleSupport)
+  if(supportPhase_ == SupportPhase::DoubleSupport)//双足支撑
   {
-    return Feet::Both;
+    return std::set<Foot>{Foot::Left};
+    //return Feet::Both;
   }
   else
   {
-    if(config_.enableWrenchDistForTouchDownFoot && touchDown_)
+    if(config_.enableWrenchDistForTouchDownFoot && touchDown_)//启动了足底力距分布并且有了触地动作
     {
       return Feet::Both;
     }
     else
     {
-      if(supportPhase_ == SupportPhase::LeftSupport)
+      if(supportPhase_ == SupportPhase::LeftSupport)//左脚支撑
       {
         return std::set<Foot>{Foot::Left};
       }
-      else // if(supportPhase_ == SupportPhase::RightSupport)
+      else //右脚支撑
       {
         return std::set<Foot>{Foot::Right};
       }
     }
   }
 }
+//----------------------------------------------------------获取支撑脚---------------------------------------------------------
 
+
+
+
+//----------------------------------------------------------行走时添加的接触----------------------------------------------------------
 std::unordered_map<Foot, std::shared_ptr<ForceColl::Contact>> FootManager::calcCurrentContactList() const
 {
-  // Set contactList
-  std::unordered_map<Foot, std::shared_ptr<ForceColl::Contact>> contactList;
-  for(const auto & foot : getCurrentContactFeet())
+  // 设置接触列表
+  std::unordered_map<Foot, std::shared_ptr<ForceColl::Contact>> contactList;//创建一个无序的容器（foot,contact）
+  
+  //遍历当前支撑脚
+  for(const auto & foot : getCurrentContactFeet())//bug:只能获取单足支撑的脚，无法获取双足支撑脚
   {
-    const auto & surface = ctl().robot().surface(surfaceName(foot));
+    const auto & surface = ctl().robot().surface(surfaceName(foot));//获取当前脚的接触表面名称
+
+  //1.创建类型为SurfaceContact的对象，依次传入参数
+  //2.emplace导入contactList
     contactList.emplace(
-        foot, std::make_shared<ForceColl::SurfaceContact>(std::to_string(foot), config_.fricCoeff,
-                                                          calcSurfaceVertexList(surface, sva::PTransformd::Identity()),
-                                                          targetFootPoses_.at(foot)));
+        foot, std::make_shared<ForceColl::SurfaceContact>(std::to_string(foot), config_.fricCoeff,//脚、摩擦系数
+                                                          calcSurfaceVertexList(surface, sva::PTransformd::Identity()),//
+                                                          targetFootPoses_.at(foot)));//目标位置
   }
 
   return contactList;
 }
+//----------------------------------------------------------行走时添加的接触---------------------------------------------------------
 
+
+//设置左右脚支撑比率
 double FootManager::leftFootSupportRatio() const
 {
   if(footstepQueue_.empty())
@@ -558,6 +624,9 @@ double FootManager::leftFootSupportRatio() const
   }
 }
 
+
+
+//
 Eigen::Vector3d FootManager::calcZmpWithOffset(const Foot & foot, const sva::PTransformd & footPose) const
 {
   Eigen::Vector3d zmpOffset = config_.zmpOffset;

@@ -51,7 +51,8 @@ public:
 
     double comZGainD = 10.0;    //质心Z轴位置的导数反馈增益
 
-    double refComZ = 0.5;    //参考质心高度 [m]
+    double refComZ = 0.55;
+    //double refComZ = 0.9;    //参考质心高度 [m]
 
     bool useTargetPoseForControlRobotAnchorFrame = true;     //否使用目标表面位姿作为控制机器人锚点框架的参考
 
@@ -157,6 +158,6 @@ protected:
   //! Wrench distribution
   std::shared_ptr<ForceColl::WrenchDistribution> wrenchDist_;//创建共享指针，指向WrenchDistribution，用于进行力矩分配
 
-  std::unordered_map<Foot, std::shared_ptr<ForceColl::Contact>> contactList_;//个无序映射容器，用于存储与脚步相关的接触对象
+  std::unordered_map<Foot, std::shared_ptr<ForceColl::Contact>> contactList_;//创建个无序映射容器，用于存储与脚步相关的接触对象
 };
 } // namespace BWC

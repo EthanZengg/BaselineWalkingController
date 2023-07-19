@@ -8,8 +8,12 @@
 #include <BaselineWalkingController/FootManager.h>
 #include <BaselineWalkingController/states/InitialState.h>
 
+
 using namespace BWC;
 
+
+
+//start函数
 void InitialState::start(mc_control::fsm::Controller & _ctl)
 {
   State::start(_ctl);
@@ -22,6 +26,9 @@ void InitialState::start(mc_control::fsm::Controller & _ctl)
   output("OK");
 }
 
+
+
+//run函数
 bool InitialState::run(mc_control::fsm::Controller &)
 {
   //若phase_为0，即按下Start按钮
@@ -39,17 +46,19 @@ bool InitialState::run(mc_control::fsm::Controller &)
   if(phase_ == 1)
   {
     phase_ = 2;
-
     // 清除"Start"按钮
     ctl().gui()->removeElement({ctl().name()}, "Start");
 
     // 重置和添加任务（Reset and add tasks）
     ctl().comTask_->reset();  
-    ctl().solver().addTask(ctl().comTask_);   //1. 添加质心任务
+    std::cout<<" 质心任务重置完成"<<std::endl;
+    ctl().solver().addTask(ctl().comTask_);  
+    std::cout<<" 完成质心任务的添加"<<std::endl;
 
     ctl().baseOriTask_->reset();
-    ctl().solver().addTask(ctl().baseOriTask_);  //2.添加基座方向任务
-
+     std::cout<<" 基座方向任务重置完成"<<std::endl;
+    ctl().solver().addTask(ctl().baseOriTask_);  
+    std::cout<<" 完成基座方向任务的添加"<<std::endl;
 
     //3.添加左右脚任务
     for(const auto & foot : Feet::Both)    //定义循环变量foot，遍历枚举类型Feet::Both中的定义值
@@ -57,8 +66,7 @@ bool InitialState::run(mc_control::fsm::Controller &)
       ctl().footTasks_.at(foot)->reset();
       ctl().solver().addTask(ctl().footTasks_.at(foot));    
     }
-
-
+    std::cout<<" 完成左右脚任务的添加"<<std::endl;
 
     // 设置任务刚度（Setup task stiffness interpolation）
     comTaskStiffness_ = ctl().comTask_->dimStiffness();  
@@ -67,20 +75,19 @@ bool InitialState::run(mc_control::fsm::Controller &)
     constexpr double stiffnessInterpDuration = 1.0; // [sec]
     stiffnessRatioFunc_ = std::make_shared<TrajColl::CubicInterpolator<double>>(
         std::map<double, double>{{ctl().t(), 0.0}, {ctl().t() + stiffnessInterpDuration, 1.0}});
-
+        
 
 
     // Reset managers
     ctl().footManager_->reset();
-    ctl().centroidalManager_->reset();
-    ctl().enableManagerUpdate_ = true;
 
+    ctl().centroidalManager_->reset();
+
+    ctl().enableManagerUpdate_ = true;
 
 
     // Setup anchor frame
     ctl().centroidalManager_->setAnchorFrame();
-
-
 
     // Add GUI of managers
     ctl().footManager_->addToGUI(*ctl().gui());
@@ -98,9 +105,6 @@ bool InitialState::run(mc_control::fsm::Controller &)
     ctl().footManager_->addToLogger(ctl().logger());
     ctl().centroidalManager_->addToLogger(ctl().logger());
   }
-
-
-
 
   // Interpolate task stiffness
   if(stiffnessRatioFunc_)
@@ -120,10 +124,11 @@ bool InitialState::run(mc_control::fsm::Controller &)
       stiffnessRatioFunc_.reset();
     }
   }
-
   return (phase_ == 3 && !stiffnessRatioFunc_);
 }
 
+
+//teardown函数
 void InitialState::teardown(mc_control::fsm::Controller &) {}
 
 EXPORT_SINGLE_STATE("BWC::Initial", InitialState)

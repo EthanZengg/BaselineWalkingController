@@ -235,7 +235,11 @@ public:
   */
   double calcRefGroundPosZ(double t, int derivOrder = 0) const;
 
-  /** \brief Calculate contact foot poses.
+
+
+
+
+  /** \brief 计算接触角的位置
       \param t time
 
       Touch down foot is NOT included.
@@ -244,13 +248,24 @@ public:
   */
   std::unordered_map<Foot, sva::PTransformd> calcContactFootPoses(double t) const;
 
-  /** \brief Get current contact feet.
+
+
+
+
+
+
+  /** \brief 获取当前接触脚
 
       If FootManager::Configuration::enableWrenchDistForTouchDownFoot is true, the touch down foot is also included.
   */
   std::set<Foot> getCurrentContactFeet() const;
 
-  /** \brief Calculate current contact list.
+
+
+
+
+
+  /** \brief 计算接触列表
 
       If FootManager::Configuration::enableWrenchDistForTouchDownFoot is true, the touch down foot is also included.
 
@@ -258,7 +273,11 @@ public:
   */
   std::unordered_map<Foot, std::shared_ptr<ForceColl::Contact>> calcCurrentContactList() const;
 
-  /** \brief Get the support ratio of left foot.
+
+
+
+
+  /** \brief 左右脚支撑比例
 
       1 for full left foot support, 0 for full right foot support.
   */
@@ -411,7 +430,7 @@ protected:
   std::unordered_map<Foot, std::shared_ptr<TrajColl::CubicInterpolator<sva::PTransformd, sva::MotionVecd>>>
       trajStartFootPoseFuncs_;
 
-  //! Support phase
+  //定义支撑阶段Supportphase，该变量初始化为双足支撑阶段DoubleSupport
   SupportPhase supportPhase_ = SupportPhase::DoubleSupport;
 
   //! ZMP function

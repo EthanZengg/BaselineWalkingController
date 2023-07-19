@@ -16,12 +16,14 @@ StatesFiles:
   - "@STATES_INSTALL_PREFIX@/@PROJECT_NAME@/states/data"
 # If true, state factory will be more verbose
 VerboseStateFactory: false
+
 # General constraints, always on
 constraints:
   - type: contact
   - type: kinematics
     damper: [0.1, 0.01, 0.5]
   - type: compoundJoint
+
 # Collision constraint
 collisions:
   - type: collision
@@ -96,29 +98,29 @@ FootTaskList:
 
 
 FootManager:
-  name: FootManager
-  footstepDuration: 0.8 # [sec]
-  doubleSupportRatio: 0.125 # []
-  deltaTransLimit: [0.15, 0.1, 12.5] # (x [m], y [m], theta [deg])
+  name: FootManager                                 #管理者名称
+  footstepDuration: 0.8                                #每一步的时间[s]
+  doubleSupportRatio: 0.125                   # 双足支撑时间的比例
+  deltaTransLimit: [0.15, 0.1, 12.5]         #位置变化极限 (x [m], y [m], theta [deg])
   midToFootTranss:
     Left:
-      translation: [0, 0.105, 0] # [m]
+      translation: [0, 0.125, 0]                      # 中心点到左脚距离[m]
     Right:
-      translation: [0, -0.105, 0] # [m]
+      translation: [0, -0.125, 0]                    # 中心点到右脚距离[m]
   footTaskGain:
     stiffness: 1000.0
-  zmpHorizon: 2.0 # [sec]
-  zmpOffset: [0, -0.02, 0] # (positive for x-forward, y-outside, z-upward) [m]
-  defaultSwingTrajType: IndHorizontalVertical
-  overwriteLandingPose: false
-  stopSwingTrajForTouchDownFoot: true
-  keepPoseForTouchDownFoot: false
-  enableWrenchDistForTouchDownFoot: true
-  enableArmSwing: false
-  fricCoeff: 0.5
-  touchDownRemainingDuration: 0.2 # [sec]
-  touchDownPosError: 0.02 # [m]
-  touchDownForceZ: 100 # [N]
+  zmpHorizon: 2.0                                         # 预测时间？[sec]
+  zmpOffset: [0, -0.02, 0]                            # ZMP偏移量(positive for x-forward, y-outside, z-upward) [m]
+  defaultSwingTrajType: IndHorizontalVertical    #用于指定摆动腿的默认轨迹，这里用的是水平和垂直相互独立的方式
+  overwriteLandingPose: false                                     #是否覆盖着陆姿势
+  stopSwingTrajForTouchDownFoot: true              #触地脚着地时是否停止当前的摆动轨迹
+  keepPoseForTouchDownFoot: false                      #触地脚着地时是否保持当前的姿势
+  enableWrenchDistForTouchDownFoot: true     #触地脚接触地面时是否考虑力矩的分布情况
+  enableArmSwing: false                                               #是否摆臂
+  fricCoeff: 0.5                                                                    #摩擦系数
+  touchDownRemainingDuration: 0.2                     # 接触到地面后的剩余时间[sec]   
+  touchDownPosError: 0.02                                         # 接触到地面时的位置误差[m]
+  touchDownForceZ: 100                                               # 接触到地面时的力的垂直分量[N]
   impedanceGains:
     SingleSupport:
       damper:
@@ -153,14 +155,14 @@ FootManager:
   VelMode:
     footstepQueueSize: 3
     enableOnlineFootstepUpdate: true
-  SwingTraj:
-    CubicSplineSimple:
+  SwingTraj:                  #加载摆动轨迹的参数
+    CubicSplineSimple:  #法一：三次样条曲线法
       withdrawDurationRatio: 0.25
       withdrawOffset: [0, 0, 0.015] # [m]
       approachDurationRatio: 0.25
       approachOffset: [0, 0, 0.015] # [m]
       swingOffset: [0, 0, 0.05] # [m]
-    IndHorizontalVertical:
+    IndHorizontalVertical:                #法二：独立的水平和垂直方向控制
       withdrawDurationRatio: 0.25
       approachDurationRatio: 0.25
       verticalTopDurationRatio: 0.5
@@ -185,6 +187,8 @@ FootManager:
       approachDurationRatio: 0.2
       approachOffset: [0, 0, 0.04] # [m]
 
+
+#质心管理器
 CentroidalManager:
   name: CentroidalManager
   useActualStateForMpc: false
@@ -194,7 +198,7 @@ CentroidalManager:
   zmpVelGain: 0.02
   comZGainP: 2000.0
   comZGainD: 500.0
-  refComZ: 0.825 # [m]
+  refComZ: 0.6 # 参考质心高度[m]参考质心高度[m]参考质心高度[m]参考质心高度[m]参考质心高度[m]参考质心高度[m]参考质心高度[m]
   useTargetPoseForControlRobotAnchorFrame: true
   useActualComForWrenchDist: false
   wrenchDistConfig:
@@ -204,7 +208,7 @@ CentroidalManager:
     regularWeight: 1e-8
     ridgeForceMinMax: [3, 1000] # [N]
 
-  # PreviewControlZmp
+  # 采用预冠控制的的方法生成质心
   method: PreviewControlZmp
   horizonDuration: 2.0 # [sec]
   horizonDt: 0.005 # [sec]
@@ -272,21 +276,57 @@ robots:
     module: env/ground
 
 
+#walker相关的配置文件
+  walker:
+
+  #姿势任务相关关节的设定
+    #PostureTask:
+    #  jointWeights:
+    #    WAIST_R: 10
+    #    WAIST_P: 10
+  # For arm swing 用于手臂的摆动
+   #   jointGains:
+   #     - jointName: right_limb_j1
+   #       stiffness: 400
+   #     - jointName: left_limb_j1
+   #       stiffness: 400
+
+
+    # 质心任务相关关节的设定
+    CoMTask:
+      activeJoints: [
+      "Root",
+       "left_leg_j1", "left_leg_j2", "left_leg_j3", "left_leg_j4", "left_leg_j5", "left_leg_j6",
+      "right_leg_j1", "right_leg_j2", "right_leg_j3", "right_leg_j4", "right_leg_j5", "right_leg_j6"]
+
+    #基座朝向相关的设定
+    BaseOrientationTask:
+      frame: base_link
+
+    FootManager:
+      enableArmSwing: false
+      #jointAnglesForArmSwing:
+      #  Left:
+      #    right_limb_j1: [-0.13962634015954636] # -8
+      #    left_limb_j1: [0.06981317007977318] # 4
+      #  Right:
+      #    right_limb_j1: [0.06981317007977318] # 4
+      #    left_limb_j1: [-0.13962634015954636] # -8
 
 
 
   # JVRC的配置文件
   jvrc1:
-    PostureTask:
-      jointWeights:
-        WAIST_R: 10
-        WAIST_P: 10
+    #PostureTask:
+    #  jointWeights:
+    #    WAIST_R: 10
+    #    WAIST_P: 10
       # For arm swing
-      jointGains:
-        - jointName: R_SHOULDER_P
-          stiffness: 400
-        - jointName: L_SHOULDER_P
-          stiffness: 400
+    #  jointGains:
+    #    - jointName: R_SHOULDER_P
+    #      stiffness: 400
+    #    - jointName: L_SHOULDER_P
+    #      stiffness: 400
 
     CoMTask:
       activeJoints: [
@@ -299,54 +339,11 @@ robots:
      # frame: WAIST_R_S
 
     FootManager:
-      enableArmSwing: true
-      jointAnglesForArmSwing:
-        Left:
-          R_SHOULDER_P: [-0.13962634015954636] # -8
-          L_SHOULDER_P: [0.06981317007977318] # 4
-        Right:
-          R_SHOULDER_P: [0.06981317007977318] # 4
-          L_SHOULDER_P: [-0.13962634015954636] # -8
-
-
-
-
-
-
-
-#walker相关的配置文件
-  walker:
-
-  #姿势任务相关关节的设定
-    #PostureTask:
-    #  jointWeights:
-    #    WAIST_R: 10
-    #    WAIST_P: 10
-
-  # For arm swing 用于手臂的摆动
-    #  jointGains:
-    #    - jointName: R_SHOULDER_P
-    #      stiffness: 400
-    #    - jointName: L_SHOULDER_P
-    #      stiffness: 400
-
-    # 质心任务相关关节的设定
-    CoMTask:
-      activeJoints: [
-      "Root",
-      "left_leg_j1", "left_leg_j2", "left_leg_j3", "left_leg_j4", "left_leg_j5", "left_leg_j6",
-      "right_leg_j1", "right_leg_j2", "right_leg_j3", "right_leg_j4", "right_leg_j5", "right_leg_j6"]
-
-    #基座朝向相关的设定
-    BaseOrientationTask:
-      frame: base_link
-
-    FootManager:
       enableArmSwing: false
-      jointAnglesForArmSwing:
-        Left:
-          R_SHOULDER_P: [-0.13962634015954636] # -8
-          L_SHOULDER_P: [0.06981317007977318] # 4
-        Right:
-          R_SHOULDER_P: [0.06981317007977318] # 4
-          L_SHOULDER_P: [-0.13962634015954636] # -8
+      #jointAnglesForArmSwing:
+      #  Left:
+      #    R_SHOULDER_P: [-0.13962634015954636] # -8
+      #    L_SHOULDER_P: [0.06981317007977318] # 4
+      #  Right:
+      #    R_SHOULDER_P: [0.06981317007977318] # 4
+      #    L_SHOULDER_P: [-0.13962634015954636] # -8
