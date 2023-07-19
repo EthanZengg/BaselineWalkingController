@@ -541,8 +541,8 @@ std::set<Foot> FootManager::getCurrentContactFeet() const
 {
   if(supportPhase_ == SupportPhase::DoubleSupport)//双足支撑
   {
-    //return std::set<Foot>{Foot::Left};
-    return Feet::Both;
+    return std::set<Foot>{Foot::Left};
+    //return Feet::Both;
   }
   else
   {
