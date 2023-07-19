@@ -200,7 +200,6 @@ void FootManager::reset()
   requireImpGainUpdate_ = true;
 
 
-/*
  //----------------------------------------------------------添加手臂挥动----------------------------------------------------------
 
   if(config_.jointAnglesForArmSwing.at("Nominal").empty() && config_.jointAnglesForArmSwing.at("Left").size() > 0) //若存在Left的配置信息
@@ -215,8 +214,7 @@ void FootManager::reset()
   } 
 
 //----------------------------------------------------------添加手臂挥动----------------------------------------------------------
- */
-
+ 
 }
 
 void FootManager::update()

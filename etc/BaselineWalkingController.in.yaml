@@ -280,16 +280,16 @@ robots:
   walker:
 
   #姿势任务相关关节的设定
-    #PostureTask:
+    PostureTask:
     #  jointWeights:
     #    WAIST_R: 10
     #    WAIST_P: 10
   # For arm swing 用于手臂的摆动
-   #   jointGains:
-   #     - jointName: right_limb_j1
-   #       stiffness: 400
-   #     - jointName: left_limb_j1
-   #       stiffness: 400
+      jointGains:
+        - jointName: right_limb_j1
+          stiffness: 400
+        - jointName: left_limb_j1
+          stiffness: 400
 
 
     # 质心任务相关关节的设定
@@ -304,14 +304,14 @@ robots:
       frame: base_link
 
     FootManager:
-      enableArmSwing: false
-      #jointAnglesForArmSwing:
-      #  Left:
-      #    right_limb_j1: [-0.13962634015954636] # -8
-      #    left_limb_j1: [0.06981317007977318] # 4
-      #  Right:
-      #    right_limb_j1: [0.06981317007977318] # 4
-      #    left_limb_j1: [-0.13962634015954636] # -8
+      enableArmSwing: true
+      jointAnglesForArmSwing:
+        Left:
+          right_limb_j1: [-0.13962634015954636] # -8
+          left_limb_j1: [0.06981317007977318] # 4
+        Right:
+          right_limb_j1: [0.06981317007977318] # 4
+          left_limb_j1: [-0.13962634015954636] # -8
 
 
 
